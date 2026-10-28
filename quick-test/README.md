@@ -54,22 +54,44 @@ This checks model access before involving the sandbox.
    fails with an "on-demand throughput isn't supported" error, use the
    inference profile ID instead.
 
-## Step 3 — Build the agent package in CloudShell (5 min)
+## Step 3 — Get the agent package (`agent.zip`) from GitHub, UI only (5 min)
 
-1. Download this repo as a ZIP from GitHub (**Code → Download ZIP**) on your computer.
-2. In the AWS console, click the **CloudShell** icon (`>_`) in the top bar.
-3. CloudShell **Actions → Upload file** → upload the repo ZIP. Then:
+AgentCore needs your code **plus its Python libraries built for Linux arm64**
+in one zip. A GitHub Actions workflow in this repo
+(`.github/workflows/build-quick-test.yml`) builds it for you.
+
+1. On GitHub, open this repo → **Actions** tab → **Build quick-test agent.zip**.
+2. Open the latest green run (or click **Run workflow** to start a new one and
+   wait ~1 min).
+3. At the bottom of the run page, under **Artifacts**, download **agent-zip**.
+4. GitHub wraps artifacts in a zip, so the download is `agent-zip.zip`. Open it
+   on your computer and take out **`agent.zip`**. That inner file is what you
+   upload; don't unzip `agent.zip` itself.
+
+**Upload it to S3 (console):**
+
+1. Console search → **S3** → **Create bucket** → name e.g.
+   `error-fix-quicktest-<your-account-id>` in the region from Step 1 → keep
+   the defaults (Block all public access stays **on**) → **Create bucket**.
+2. Open the bucket → **Upload** → **Add files** → `agent.zip` → **Upload**.
+3. Click the uploaded `agent.zip` → copy its **S3 URI**.
+
+(If the runtime form in Step 4 offers a direct `.zip` upload, you can skip S3.)
+
+<details>
+<summary>Alternative: build in CloudShell instead of GitHub</summary>
+
+Download the repo ZIP (**Code → Download ZIP**), open **CloudShell** (`>_` in
+the console top bar) → **Actions → Upload file**, then:
 
 ```bash
 unzip -q aws-error-fix-agent-main.zip
 cd aws-error-fix-agent-main/quick-test
-./build.sh                                   # creates agent.zip (~20 MB)
-
+./build.sh
 BUCKET=error-fix-quicktest-$(aws sts get-caller-identity --query Account --output text)-$AWS_REGION
-aws s3 mb s3://$BUCKET
-aws s3 cp agent.zip s3://$BUCKET/agent.zip
-echo "S3 URI: s3://$BUCKET/agent.zip"
+aws s3 mb s3://$BUCKET && aws s3 cp agent.zip s3://$BUCKET/agent.zip
 ```
+</details>
 
 ## Step 4 — Create the AgentCore runtime in the console (5 min)
 
@@ -159,11 +181,39 @@ Change only the `error` text. Good checks:
 | Runtime fails to start | Check the entry point is `main.py`, Python 3.13, and the zip was built with `build.sh` (arm64 wheels) |
 | Need logs | CloudWatch → **Log groups** → search `bedrock-agentcore` |
 
-## Clean up
+## Clean up (console)
 
-- AgentCore console → delete runtime `errorFixQuickTest`.
-- CloudShell: `aws s3 rm s3://$BUCKET/agent.zip && aws s3 rb s3://$BUCKET`
-- IAM → delete the role created in Step 4 (and its inline policy).
+- **AgentCore** → Runtime → select `errorFixQuickTest` → **Delete**.
+- **S3** → your bucket → select `agent.zip` → **Delete**; then select the
+  bucket → **Delete**.
+- **IAM** → Roles → the role from Step 4 → **Delete**.
+- **CloudWatch** → Log groups → delete the `bedrock-agentcore` log group(s) for
+  this runtime (optional; tiny cost).
+
+## Estimated cost of this test
+
+These are rough estimates for **about 50 test runs**. Prices come from
+secondary sources or Anthropic's API list; check the official AWS pricing pages
+before relying on them.
+
+| Item | Estimate | Basis |
+|---|---|---|
+| Claude on Bedrock | **~$0.01–0.10 per run → ~$0.50–5 for 50 runs**, depending on model tier | ~8K input + ~3K output tokens per run (several tool turns). Per million tokens (in/out): Haiku-class ~$0.10/$0.50 to ~$1/$5, Sonnet-class ~$2/$10 to ~$3/$15, Opus-class ~$4/$20 to ~$5/$25. Bedrock in-region endpoints reportedly cost ~10% more |
+| AgentCore Runtime | **< $0.01 per run → < $0.50 for 50 runs** | Billed for active CPU (~$0.09–0.13 per vCPU-hour) and memory (~$0.009–0.017 per GB-hour); time spent waiting on the model isn't billed as CPU |
+| S3 (one 20 MB file) | < $0.01 | |
+| CloudWatch Logs | < $0.10 | A few MB of logs |
+| GitHub Actions build | $0 | ~1 min per build; private repos on GitHub Free include 2,000 min/month |
+| CloudShell (optional) | $0 | No charge for CloudShell itself (not re-verified) |
+| **Total** | **≈ $1–6** | Biggest lever: which Claude model you choose |
+
+**Guardrail:** create a budget alert first: **Billing and Cost Management →
+Budgets → Create budget → Zero spend or Monthly cost budget**, e.g. $10, with
+an email alert.
+
+**For later (not this test):** in the full pipeline, cost scales with
+*distinct* errors analysed, not raw error volume, because dedupe stops
+repeats. 100 distinct errors/month at ~$0.05–0.10 each is roughly
+$5–10/month in model cost plus small Lambda, DynamoDB and S3 charges.
 
 ## Verification notes
 

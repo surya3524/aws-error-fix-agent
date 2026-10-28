@@ -1,0 +1,23 @@
+name: Build quick-test agent.zip
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["quick-test/**", ".github/workflows/build-quick-test.yml"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Build agent.zip
+        run: ./quick-test/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agent-zip
+          path: quick-test/agent.zip
+          retention-days: 30

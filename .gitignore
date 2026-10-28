@@ -7,3 +7,5 @@ __pycache__/
 cdk.out/
 .aws-sam/
 .bedrock_agentcore/
+deployment_package/
+quick-test/agent.zip
