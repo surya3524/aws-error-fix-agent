@@ -1,0 +1,9 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+*.zip
+cdk.out/
+.aws-sam/
+.bedrock_agentcore/
