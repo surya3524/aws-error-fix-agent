@@ -1,0 +1,4 @@
+{
+  "model_id": "openai.gpt-oss-20b-1:0",
+  "error": "JES2 JOB LOG -- PAYJOB JOB04512\nIEF403I PAYJOB - STARTED\nCEE3207S The system detected a data exception (System Completion Code=0C7).\n         From compile unit PAYCALC at entry point PAYCALC at statement 33 at compile unit offset +000003A2\nIEA995I SYMPTOM DUMP OUTPUT  SYSTEM COMPLETION CODE=0C7  REASON CODE=00000007\nIEF450I PAYJOB STEP010 - ABEND=S0C7 U0000 REASON=00000007\nIEF404I PAYJOB - ENDED\nInput dataset TIMEIN=PROD.PAYROLL.TIMESHT.WEEKLY, failing record 1187: 'E10442JANE DOE                            02550' (hours field is blank)"
+}

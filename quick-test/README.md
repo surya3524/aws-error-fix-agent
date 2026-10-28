@@ -24,6 +24,10 @@ quick-test/
 │   └── pricing.py     # apply_discount(amount, coupon)  <- bug: coupon=None crashes
 ├── test_payload.json  # matching "random" error: KeyError: None
 ├── console_test_input.json  # ready-to-paste console Test input (model that worked)
+├── sample_cobol/      # COBOL pilot: PAYCALC.cbl, EMPREC.cpy, PAYJOB.jcl (planted S0C7)
+├── console_test_cobol.json  # matching mainframe job log (needs the S3 setup)
+├── S3_CODE_SOURCE.md  # read code from a private S3 bucket (CODE_BUCKET / CODE_PREFIX)
+├── demo/             # public demo page (Lambda function URL)
 └── build.sh           # builds agent.zip (Linux arm64, Python 3.13)
 ```
 
