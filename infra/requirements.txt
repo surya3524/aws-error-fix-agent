@@ -1,0 +1,3 @@
+# aws_bedrockagentcore.Runtime (L2) is in aws-cdk-lib; 2.275.0 verified to contain it.
+aws-cdk-lib==2.275.0
+constructs>=10.0.0,<11.0.0

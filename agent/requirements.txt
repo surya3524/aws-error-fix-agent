@@ -1,0 +1,4 @@
+# Pinned to versions verified on PyPI (Oct 2026). claude-agent-sdk ships a bundled
+# Claude Code binary per platform (manylinux aarch64 wheel exists for AgentCore's ARM64).
+bedrock-agentcore==1.25.1
+claude-agent-sdk==0.2.174

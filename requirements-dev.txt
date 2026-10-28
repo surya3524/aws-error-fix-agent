@@ -1,0 +1,4 @@
+# Local runs (scripts/run_local.py) and unit tests.
+-r agent/requirements.txt
+boto3==1.43.120
+pytest>=8

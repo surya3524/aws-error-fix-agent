@@ -1,0 +1,3 @@
+# Bundled into the Lambda so the bedrock-agentcore client (invoke_agent_runtime,
+# stop_runtime_session) is guaranteed present regardless of the runtime's built-in boto3.
+boto3==1.43.120

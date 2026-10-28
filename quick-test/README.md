@@ -198,7 +198,7 @@ before relying on them.
 
 | Item | Estimate | Basis |
 |---|---|---|
-| Claude on Bedrock | **~$0.01–0.10 per run → ~$0.50–5 for 50 runs**, depending on model tier | ~8K input + ~3K output tokens per run (several tool turns). Per million tokens (in/out): Haiku-class ~$0.10/$0.50 to ~$1/$5, Sonnet-class ~$2/$10 to ~$3/$15, Opus-class ~$4/$20 to ~$5/$25. Bedrock in-region endpoints reportedly cost ~10% more |
+| Claude on Bedrock | **~$0.01–0.10 per run → ~$0.50–5 for 50 runs**, depending on model tier | ~8K input + ~3K output tokens per run (several tool turns). Per million tokens (in/out): smallest tier ~$0.10/$0.50 to ~$1/$5, mid tier ~$2/$10 to ~$3/$15, largest tier ~$4/$20 to ~$5/$25. Bedrock in-region endpoints reportedly cost ~10% more |
 | AgentCore Runtime | **< $0.01 per run → < $0.50 for 50 runs** | Billed for active CPU (~$0.09–0.13 per vCPU-hour) and memory (~$0.009–0.017 per GB-hour); time spent waiting on the model isn't billed as CPU |
 | S3 (one 20 MB file) | < $0.01 | |
 | CloudWatch Logs | < $0.10 | A few MB of logs |
