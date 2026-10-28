@@ -10,3 +10,4 @@ This phase only suggests fixes: it does not create pull requests or change code.
 **Status:** scaffolding. Implementation and the AWS setup guide are coming.
 
 - Design: [docs/design.md](docs/design.md)
+- Quick console test (deploy the agent and try it in ~30 min): [quick-test/README.md](quick-test/README.md)
