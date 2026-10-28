@@ -49,7 +49,10 @@ TOOLS = {
 }
 
 app = BedrockAgentCoreApp()
-bedrock = boto3.client("bedrock-runtime")
+# botocore reads AWS_DEFAULT_REGION, not AWS_REGION; without a region the
+# client raises at import time and the runtime never becomes healthy.
+REGION = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-2"
+bedrock = boto3.client("bedrock-runtime", region_name=REGION)
 
 
 def run_tool(name, tool_input):
