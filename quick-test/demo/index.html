@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Error Fix Agent</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6b66;
+    --border: #e2e2dc; --accent: #2f5bd3; --accent-text: #ffffff;
+    --code-bg: #f1f1ec; --high: #1f7a4d; --medium: #a36a00; --low: #b3261e;
+    --danger-bg: #fdecea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151514; --panel: #1e1e1c; --text: #ececea; --muted: #9a9a94;
+      --border: #33332f; --accent: #7d9cff; --accent-text: #10131c;
+      --code-bg: #262623; --high: #5fcf95; --medium: #e6b44c; --low: #ff8a80;
+      --danger-bg: #3a1f1d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; margin-bottom: 20px;
+  }
+  label { display: block; font-weight: 600; margin-bottom: 8px; }
+  textarea, input {
+    width: 100%; font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--text); background: var(--code-bg);
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+  }
+  textarea { min-height: 220px; resize: vertical; }
+  input { font-family: inherit; font-size: 15px; max-width: 280px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  button {
+    font: inherit; font-weight: 600; border-radius: 8px; padding: 9px 16px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button:disabled { opacity: .55; cursor: wait; }
+  .hint { color: var(--muted); font-size: 13px; }
+  #passcode-row { margin-bottom: 16px; }
+  .badge {
+    display: inline-block; font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor;
+  }
+  .badge.high { color: var(--high); } .badge.medium { color: var(--medium); } .badge.low { color: var(--low); }
+  h2 { font-size: 1.1rem; margin: 0; }
+  .result-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .field { margin: 14px 0 0; }
+  .field b { display: block; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .error { background: var(--danger-bg); border-color: var(--low); }
+  details { margin-top: 16px; } summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  pre { overflow-x: auto; background: var(--code-bg); padding: 12px; border-radius: 8px; font-size: 12px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Error Fix Agent</h1>
+  <p class="lead">Paste a Python error from the sample checkout app. The agent reads the code and returns the root cause, a fix, and how confident it is.</p>
+
+  <div class="panel">
+    <div id="passcode-row" hidden>
+      <label for="passcode">Demo passcode</label>
+      <input id="passcode" type="password" autocomplete="off">
+    </div>
+    <label for="error">Error log</label>
+    <textarea id="error" spellcheck="false"></textarea>
+    <div class="row">
+      <button class="primary" id="analyze">Analyze</button>
+      <button id="sample-real">Sample: real bug</button>
+      <button id="sample-missing">Sample: unknown file</button>
+      <span class="hint" id="status"></span>
+    </div>
+  </div>
+
+  <div class="panel" id="result" hidden></div>
+</main>
+
+<script>
+  const NEEDS_PASSCODE = __NEEDS_PASSCODE__;
+  const SAMPLES = {
+    real: `Traceback (most recent call last):
+  File "app.py", line 7, in checkout_handler
+    return {"total": order_total(items, coupon)}
+  File "orders.py", line 6, in order_total
+    return apply_discount(subtotal, coupon)
+  File "pricing.py", line 5, in apply_discount
+    rate = DISCOUNTS[coupon]
+KeyError: None
+Request: POST /checkout {"items":[{"price":19.99,"qty":2}]}`,
+    missing: `Traceback (most recent call last):
+  File "tax.py", line 12, in compute_tax
+    return amount / rate
+ZeroDivisionError: division by zero`,
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const errorBox = $("error"), result = $("result"), statusEl = $("status"), button = $("analyze");
+  errorBox.value = SAMPLES.real;
+  $("passcode-row").hidden = !NEEDS_PASSCODE;
+  $("sample-real").onclick = () => { errorBox.value = SAMPLES.real; };
+  $("sample-missing").onclick = () => { errorBox.value = SAMPLES.missing; };
+
+  function el(tag, text, cls) {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    if (cls) node.className = cls;
+    return node;
+  }
+
+  function field(label, content) {
+    const p = el("p", undefined, "field");
+    p.append(el("b", label), content);
+    return p;
+  }
+
+  function render(data, ok) {
+    result.replaceChildren();
+    result.classList.toggle("error", !ok || !!data.error);
+    result.hidden = false;
+    if (!ok || data.error) {
+      result.append(el("h2", "Something went wrong"), el("p", data.error || "Unknown error"));
+      return;
+    }
+    if (data.raw_answer) {
+      result.append(el("h2", "Agent answer"), el("p", data.raw_answer));
+      return;
+    }
+    const head = el("div", undefined, "result-head");
+    const level = String(data.confidence || "unknown").toLowerCase();
+    head.append(el("h2", "Diagnosis"), el("span", level + " confidence", "badge " + level));
+    result.append(head);
+    result.append(field("Root cause", document.createTextNode(data.root_cause || "")));
+    result.append(field("Suggested fix", document.createTextNode(data.fix_suggestion || "")));
+    const files = el("span");
+    (data.files || []).forEach((f, i) => {
+      if (i) files.append(" ");
+      files.append(el("code", f.line ? `${f.path}:${f.line}` : f.path));
+    });
+    if (!(data.files || []).length) files.textContent = "none";
+    result.append(field("Files", files));
+    const raw = el("details");
+    raw.append(el("summary", "Raw JSON"), el("pre", JSON.stringify(data, null, 2)));
+    result.append(raw);
+  }
+
+  button.onclick = async () => {
+    button.disabled = true;
+    const started = Date.now();
+    statusEl.textContent = "Agent is reading the code…";
+    try {
+      const res = await fetch("analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: errorBox.value, passcode: $("passcode").value }),
+      });
+      const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      render(data, res.ok);
+      statusEl.textContent = `Done in ${((Date.now() - started) / 1000).toFixed(1)}s`;
+    } catch (e) {
+      render({ error: String(e) }, false);
+      statusEl.textContent = "";
+    } finally {
+      button.disabled = false;
+    }
+  };
+</script>
+</body>
+</html>

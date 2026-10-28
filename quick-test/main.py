@@ -15,6 +15,7 @@ from botocore.exceptions import ClientError
 
 CODE_ROOT = (Path(__file__).parent / "sample_app").resolve()
 MAX_TURNS = 10
+MAX_ERROR_CHARS = 8000  # caps token spend per request
 
 SYSTEM_PROMPT = (
     "You are debugging a production error. Use the list_files and read_file "
@@ -80,6 +81,8 @@ def invoke(payload):
     error_text = payload.get("error")
     if not error_text:
         return {"error": "Payload must include an 'error' field"}
+    if len(error_text) > MAX_ERROR_CHARS:
+        return {"error": f"'error' is longer than {MAX_ERROR_CHARS} characters"}
 
     messages = [{"role": "user", "content": [{"text": f"Error log:\n{error_text}"}]}]
     for _ in range(MAX_TURNS):
