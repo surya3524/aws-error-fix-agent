@@ -23,6 +23,7 @@ quick-test/
 │   ├── orders.py      # order_total(items, coupon)
 │   └── pricing.py     # apply_discount(amount, coupon)  <- bug: coupon=None crashes
 ├── test_payload.json  # matching "random" error: KeyError: None
+├── console_test_input.json  # ready-to-paste console Test input (model that worked)
 └── build.sh           # builds agent.zip (Linux arm64, Python 3.13)
 ```
 
@@ -137,7 +138,8 @@ Tighten it to the single model/profile ARN for anything long-lived.
 
 1. Open the runtime → **Test** (opens the runtime playground).
 2. In **Input**, paste (replace `<MODEL_ID>`; omit `model_id` if you set the
-   env var in Step 4.6):
+   env var in Step 4.6). `console_test_input.json` has the exact input that
+   worked, with `openai.gpt-oss-20b-1:0`:
 
 ```json
 {
