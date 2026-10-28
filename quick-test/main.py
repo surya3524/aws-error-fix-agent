@@ -6,10 +6,12 @@ suggestion as JSON. Uses the Bedrock Converse API with tool use.
 """
 import json
 import os
+import re
 from pathlib import Path
 
 import boto3
 from bedrock_agentcore import BedrockAgentCoreApp
+from botocore.exceptions import ClientError
 
 CODE_ROOT = (Path(__file__).parent / "sample_app").resolve()
 MAX_TURNS = 10
@@ -81,13 +83,26 @@ def invoke(payload):
 
     messages = [{"role": "user", "content": [{"text": f"Error log:\n{error_text}"}]}]
     for _ in range(MAX_TURNS):
-        response = bedrock.converse(
-            modelId=model_id,
-            system=[{"text": SYSTEM_PROMPT}],
-            messages=messages,
-            toolConfig=TOOLS,
-        )
+        try:
+            response = bedrock.converse(
+                modelId=model_id,
+                system=[{"text": SYSTEM_PROMPT}],
+                messages=messages,
+                toolConfig=TOOLS,
+            )
+        except ClientError as e:
+            # Return the Bedrock error instead of a bare 500 from the runtime
+            return {"error": str(e)}
         message = response["output"]["message"]
+
+        # Converse rejects history whose tool names don't match this pattern,
+        # so a malformed name from the model would fail the next call.
+        for block in message["content"]:
+            if "toolUse" in block:
+                name = block["toolUse"]["name"]
+                print(f"tool call: {name!r}")
+                if not re.fullmatch(r"[a-zA-Z0-9_-]+", name):
+                    block["toolUse"]["name"] = re.sub(r"[^a-zA-Z0-9_-]", "_", name) or "invalid_tool"
         messages.append(message)
 
         if response["stopReason"] != "tool_use":
